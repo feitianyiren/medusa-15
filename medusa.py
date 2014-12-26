@@ -4,7 +4,9 @@ from math import ceil
 from operator import itemgetter
 from statistics import mean, median
 
-from libsyntyche.common import read_json, local_path
+from libsyntyche.common import read_json, local_path, write_json
+
+# ====================== Stats mode =====================================
 
 def generate_intervals(stats):
     """
@@ -38,6 +40,13 @@ def format_stats(entries, maxnamewidth):
     for entry in entries:
         yield f(*entry)
 
+def show_stats(data):
+    entries = list(generate_stats_entries(data))
+    maxnamewidth = max(map(len, next(zip(*entries))))
+    print('\n'.join(format_stats(entries, maxnamewidth)))
+
+# ======================== TODO mode ==================================
+
 def generate_todo_entries(data):
     """
     Return all entries that aren't complete or in hiatus with their name,
@@ -57,25 +66,64 @@ def format_todo(entries):
     for n, entry in enumerate(sorted(entries, key=itemgetter(2), reverse=True), 1):
         yield ('>> ' if n == 1 else '   ') + '{0}. (+{3}) {1} (upd. {2})'.format(n, *entry)
 
-def show_stats(data):
-    entries = list(generate_stats_entries(data))
-    maxnamewidth = max(map(len, next(zip(*entries))))
-    print('\n'.join(format_stats(entries, maxnamewidth)))
-
 def show_todo(data):
     entry_strings = list(format_todo(generate_todo_entries(data)))
     maxwidth = max(map(len, entry_strings))-6
     print('='*(maxwidth//2) + ' TODO ' + '='*ceil(maxwidth/2))
     print('\n'.join(entry_strings))
 
+# ===================== Update mode ====================================
+
+def get_entry_name(names, namearg):
+    """
+    Return the entry with the namearg as name or as a part of its name.
+    If there are more than one that fit, print the possibilities and quit.
+    If no entries match, quit.
+    """
+    if namearg in names:
+        return namearg
+    partialnames = []
+    for name in names:
+        if namearg in name:
+            partialnames.append(name)
+    if not partialnames:
+        raise KeyError
+    if len(partialnames) == 1:
+        return partialnames[0]
+    else:
+        print('Ambiguous name, can mean these entries:')
+        for p in partialnames:
+            print('*', p)
+        raise KeyError
+
+def run_update(data, name):
+    try:
+        entryname = get_entry_name(data.keys(), name)
+    except KeyError:
+        print('Error: Can\'t find entry')
+    else:
+        today = date.today().strftime('%Y-%m-%d')
+        data[entryname]['stats'].append(today)
+        write_json(local_path('medusadata.json'), data)
+        print('Updated today: {}'.format(entryname))
+
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', choices=['stats', 'todo'])
+    parser.add_argument('mode', choices=['stats', 'todo', 'update'])
+    parser.add_argument('entryname', nargs='?')
     args = parser.parse_args()
-    modes = {'stats': show_stats, 'todo': show_todo}
-    modes[args.mode](read_json(local_path('medusadata.json')))
+    data = read_json(local_path('medusadata.json'))
+    if args.mode == 'stats':
+        show_stats(data)
+    elif args.mode == 'todo':
+        show_todo(data)
+    elif args.mode == 'update':
+        if not args.entryname or not args.entryname.strip():
+            print('Error: No entry name specified')
+            return
+        run_update(data, args.entryname)
 
 if __name__ == '__main__':
     main()
