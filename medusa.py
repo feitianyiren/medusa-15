@@ -56,7 +56,8 @@ def generate_todo_entries(data):
         if datadict['complete'] or datadict['hiatus']:
             continue
         i = list(generate_intervals(datadict['stats']))[-1]
-        yield (name, len(datadict['stats'])+1, i)
+        maxi = '/' + datadict['total parts'] if 'total parts' in datadict else ''
+        yield (name, len(datadict['stats'])+1, i, maxi)
 
 def format_todo(entries):
     """
@@ -64,7 +65,7 @@ def format_todo(entries):
     last update.
     """
     for n, entry in enumerate(sorted(entries, key=itemgetter(2), reverse=True), 1):
-        yield ('>> ' if n == 1 else '   ') + '{0}. (+{3}) {1} (upd. {2})'.format(n, *entry)
+        yield ('>> ' if n == 1 else '   ') + '{0}. (+{3}) {1} (upd. {2}{4})'.format(n, *entry)
 
 def show_todo(data):
     entry_strings = list(format_todo(generate_todo_entries(data)))
