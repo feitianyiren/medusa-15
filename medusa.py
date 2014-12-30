@@ -36,7 +36,7 @@ def format_stats(entries, maxnamewidth, sortby, reverse):
     header = ['name', 'current', 'mean', 'median', 'max', 'min']
     f = '{{:{}}}  {{:>8}}  {{:>5}}  {{:>7}}  {{:>4}}  {{:>4}}'.format(maxnamewidth).format
     yield f(*header)
-    yield '-'*len(f(*header))
+    yield '\u2500'*len(f(*header))
     for entry in sorted(entries, key=itemgetter(sortby), reverse=reverse):
         yield f(*entry)
 
@@ -70,7 +70,7 @@ def format_todo(entries):
 def show_todo(data):
     entry_strings = list(format_todo(generate_todo_entries(data)))
     maxwidth = max(map(len, entry_strings))-6
-    print('='*(maxwidth//2) + ' TODO ' + '='*ceil(maxwidth/2))
+    print('\u2550'*(maxwidth//2) + ' TODO ' + '\u2550'*ceil(maxwidth/2))
     print('\n'.join(entry_strings))
 
 # ===================== Update mode ====================================
@@ -113,7 +113,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['stats', 'todo', 'update'])
-    parser.add_argument('entryname', nargs='?')
+    parser.add_argument('entryname', nargs='?',
+                        help='part of the name of the fic to update')
     sortalt = ['name', 'cur', 'mean', 'med', 'max', 'min']
     parser.add_argument('-s', '--sort-stats', choices=sortalt, default=sortalt[0])
     parser.add_argument('-r', '--reverse', action='store_true')
