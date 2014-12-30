@@ -28,7 +28,7 @@ def generate_stats_entries(data):
         i = list(generate_intervals(datadict['stats']))
         yield (name, i[-1], round(mean(i)), round(median(i)), max(i), min(i))
 
-def format_stats(entries, maxnamewidth):
+def format_stats(entries, maxnamewidth, sortby, reverse):
     """
     Return the data in a formatted table as an iterator of strings, including
     a header.
@@ -37,13 +37,13 @@ def format_stats(entries, maxnamewidth):
     f = '{{:{}}}  {{:>8}}  {{:>5}}  {{:>7}}  {{:>4}}  {{:>4}}'.format(maxnamewidth).format
     yield f(*header)
     yield '-'*len(f(*header))
-    for entry in entries:
+    for entry in sorted(entries, key=itemgetter(sortby), reverse=reverse):
         yield f(*entry)
 
-def show_stats(data):
+def show_stats(data, sortby, reverse):
     entries = list(generate_stats_entries(data))
     maxnamewidth = max(map(len, next(zip(*entries))))
-    print('\n'.join(format_stats(entries, maxnamewidth)))
+    print('\n'.join(format_stats(entries, maxnamewidth, sortby, reverse)))
 
 # ======================== TODO mode ==================================
 
@@ -113,10 +113,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', choices=['stats', 'todo', 'update'])
     parser.add_argument('entryname', nargs='?')
+    sortalt = ['name', 'cur', 'mean', 'med', 'max', 'min']
+    parser.add_argument('-s', '--sort-stats', choices=sortalt, default=sortalt[0])
+    parser.add_argument('-r', '--reverse', action='store_true')
     args = parser.parse_args()
     data = read_json(local_path('medusadata.json'))
     if args.mode == 'stats':
-        show_stats(data)
+        show_stats(data, sortalt.index(args.sort_stats) if args.sort_stats else None,
+                   args.reverse)
     elif args.mode == 'todo':
         show_todo(data)
     elif args.mode == 'update':
